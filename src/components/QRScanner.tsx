@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Html5QrcodeScanner } from "html5-qrcode";
 import { useAuth } from "../context/AuthContext";
 import { QRCodeData } from "../types";
 import { parseQRCode, isQRCodeValid } from "../utils/qrcode";
@@ -15,104 +16,258 @@ const QRScanner: React.FC = () => {
   const { user, logout } = useAuth();
   const [isScanning, setIsScanning] = useState(false);
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
-  const [stream, setStream] = useState<MediaStream | null>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [scanner, setScanner] = useState<Html5QrcodeScanner | null>(null);
+  const [cameraError, setCameraError] = useState<string | null>(null);
+  const scannerRef = useRef<HTMLDivElement>(null);
 
   const startScanning = async () => {
+    console.log("Starting scanner..."); // Debug log
+    setCameraError(null);
+    setScanResult(null);
+    
+    // First, check if we can access the camera
     try {
-      const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: "environment", // Use back camera on mobile
+      console.log("Checking camera permissions...");
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { 
+          facingMode: "environment",
           width: { ideal: 1280 },
-          height: { ideal: 720 },
-        },
+          height: { ideal: 720 }
+        } 
       });
-
-      setStream(mediaStream);
+      
+      // If we get here, camera access is granted
+      console.log("Camera access granted, stopping test stream...");
+      stream.getTracks().forEach(track => track.stop());
+      
+      // Now start the QR scanner
       setIsScanning(true);
-
-      if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream;
-      }
     } catch (error) {
-      console.error("Error accessing camera:", error);
-      setScanResult({
-        success: false,
-        message: "Unable to access camera. Please check permissions.",
-        timestamp: new Date(),
-      });
+      console.error("Camera access failed:", error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      
+      if (errorMessage.includes("NotAllowedError") || errorMessage.includes("Permission denied")) {
+        setCameraError("Camera access denied. Please allow camera permissions and try again.");
+      } else if (errorMessage.includes("NotFoundError")) {
+        setCameraError("No camera found. Please check if your device has a camera.");
+      } else {
+        setCameraError(`Camera error: ${errorMessage}`);
+      }
     }
   };
 
   const stopScanning = () => {
-    if (stream) {
-      stream.getTracks().forEach((track) => track.stop());
-      setStream(null);
+    if (scanner) {
+      scanner.clear().then(() => {
+        setScanner(null);
+        setIsScanning(false);
+      }).catch((error) => {
+        console.error("Failed to clear scanner:", error);
+        setScanner(null);
+        setIsScanning(false);
+      });
     }
-    setIsScanning(false);
   };
 
-  // Mock QR code detection - in real app, use a proper QR scanner library
+  const onScanSuccess = (decodedText: string, decodedResult: any) => {
+    console.log(`QR Code detected: ${decodedText}`, decodedResult);
+    
+    try {
+      const qrData = parseQRCode(decodedText);
+
+      if (!qrData) {
+        setScanResult({
+          success: false,
+          message: "Invalid QR code format",
+          timestamp: new Date(),
+        });
+        return;
+      }
+
+      if (!isQRCodeValid(qrData)) {
+        setScanResult({
+          success: false,
+          message: "QR code has expired",
+          timestamp: new Date(),
+        });
+        return;
+      }
+
+      // Check if QR code has already been used (mock check)
+      const isUsed = Math.random() > 0.8; // 20% chance of being already used
+
+      if (isUsed) {
+        setScanResult({
+          success: false,
+          message: "QR code has already been used",
+          timestamp: new Date(),
+        });
+        return;
+      }
+
+      // Successful scan
+      setScanResult({
+        success: true,
+        userName: `User ${qrData.userId.slice(-4)}`, // Mock user name
+        message: "User entry completed successfully",
+        timestamp: new Date(),
+      });
+
+      stopScanning();
+    } catch (error) {
+      console.error("Error parsing QR code:", error);
+      setScanResult({
+        success: false,
+        message: "Error processing QR code",
+        timestamp: new Date(),
+      });
+    }
+  };
+
+  const onScanFailure = (error: string) => {
+    // Handle scan failure - usually this is just "No QR code found"
+    console.debug("QR scan failed:", error);
+    
+    // Check for various types of camera errors
+    if (error.includes("NotAllowedError") || 
+        error.includes("Permission denied") ||
+        error.includes("permission denied") ||
+        error.includes("User denied")) {
+      setCameraError("Camera access denied. Please allow camera permissions and refresh the page.");
+      setIsScanning(false);
+    } else if (error.includes("NotFoundError") || 
+               error.includes("No camera found") ||
+               error.includes("Could not start video source")) {
+      setCameraError("No camera found. Please check if your device has a camera and it's not being used by another application.");
+      setIsScanning(false);
+    } else if (error.includes("NotReadableError") ||
+               error.includes("Could not start video source")) {
+      setCameraError("Camera is already in use by another application. Please close other camera apps and try again.");
+      setIsScanning(false);
+    } else if (error.includes("OverconstrainedError")) {
+      setCameraError("Camera settings not supported. Trying with different settings...");
+      // We could retry with different settings here
+    }
+    // For "QR code parse error" or similar, we don't show errors as these are normal
+  };
+
+  // Mock QR code detection for testing
   const simulateQRScan = () => {
-    // Simulate scanning a QR code
     const mockQRData: QRCodeData = {
-      registrationId: "reg-1",
+      registrationId: "reg-" + Math.random().toString(36).substr(2, 9),
       eventId: "event-123",
-      userId: "user-123",
+      userId: "user-" + Math.random().toString(36).substr(2, 9),
       timestamp: Date.now() - 1000 * 60 * 30, // 30 minutes ago
     };
 
-    const qrData = parseQRCode(JSON.stringify(mockQRData));
-
-    if (!qrData) {
-      setScanResult({
-        success: false,
-        message: "Invalid QR code format",
-        timestamp: new Date(),
-      });
-      return;
-    }
-
-    if (!isQRCodeValid(qrData)) {
-      setScanResult({
-        success: false,
-        message: "QR code has expired",
-        timestamp: new Date(),
-      });
-      return;
-    }
-
-    // Check if QR code has already been used (mock check)
-    const isUsed = Math.random() > 0.7; // 30% chance of being already used
-
-    if (isUsed) {
-      setScanResult({
-        success: false,
-        message: "QR code has already been used",
-        timestamp: new Date(),
-      });
-      return;
-    }
-
-    // Successful scan
-    setScanResult({
-      success: true,
-      userName: "John Doe", // Mock user name
-      message: "User entry completed successfully",
-      timestamp: new Date(),
-    });
-
-    stopScanning();
+    onScanSuccess(JSON.stringify(mockQRData), null);
   };
 
   useEffect(() => {
     return () => {
-      if (stream) {
-        stream.getTracks().forEach((track) => track.stop());
+      if (scanner) {
+        scanner.clear().catch(console.error);
       }
     };
-  }, [stream]);
+  }, [scanner]);
+
+  // Initialize scanner when isScanning becomes true
+  useEffect(() => {
+    if (isScanning && !scanner) {
+      const initScanner = () => {
+        const scannerElement = document.getElementById("qr-reader");
+        console.log("UseEffect - Scanner element found:", scannerElement);
+        
+        if (scannerElement) {
+          try {
+            // Try with comprehensive config first
+            const config = {
+              fps: 10,
+              qrbox: { width: 250, height: 250 },
+              rememberLastUsedCamera: true,
+              supportedScanTypes: [], // Only camera, no file upload
+              showTorchButtonIfSupported: true,
+              showZoomSliderIfSupported: true,
+              defaultZoomValueIfSupported: 2,
+              aspectRatio: 1.0, // Square aspect ratio
+            };
+
+            console.log("UseEffect - Creating scanner with config:", config);
+            
+            const html5QrCodeScanner = new Html5QrcodeScanner(
+              "qr-reader",
+              config,
+              /* verbose= */ true // Enable verbose logging
+            );
+
+            console.log("UseEffect - Rendering scanner...");
+            html5QrCodeScanner.render(
+              (decodedText, decodedResult) => {
+                console.log("Scan success callback triggered");
+                onScanSuccess(decodedText, decodedResult);
+              },
+              (error) => {
+                console.log("Scan failure callback triggered:", error);
+                onScanFailure(error);
+              }
+            );
+            setScanner(html5QrCodeScanner);
+            console.log("UseEffect - Scanner created and rendered successfully");
+            
+            // Debug: Check what elements are created
+            setTimeout(() => {
+              const scanRegion = document.querySelector('#qr-reader__scan_region');
+              const videoElement = document.querySelector('#qr-reader video') as HTMLVideoElement;
+              const canvas = document.querySelector('#qr-reader canvas');
+              console.log("Debug - Scan region:", scanRegion);
+              console.log("Debug - Video element:", videoElement);
+              console.log("Debug - Canvas element:", canvas);
+              
+              if (videoElement) {
+                console.log("Debug - Video dimensions:", {
+                  width: videoElement.offsetWidth,
+                  height: videoElement.offsetHeight,
+                  videoWidth: videoElement.videoWidth,
+                  videoHeight: videoElement.videoHeight
+                });
+              }
+            }, 2000);
+          } catch (error) {
+            console.error("UseEffect - Error creating scanner:", error);
+            
+            // Try with minimal config as fallback
+            try {
+              console.log("Trying fallback scanner configuration...");
+              const fallbackConfig = {
+                fps: 10,
+                qrbox: 250,
+              };
+              
+              const fallbackScanner = new Html5QrcodeScanner(
+                "qr-reader",
+                fallbackConfig,
+                false
+              );
+              
+              fallbackScanner.render(onScanSuccess, onScanFailure);
+              setScanner(fallbackScanner);
+              console.log("Fallback scanner created successfully");
+            } catch (fallbackError) {
+              console.error("Fallback scanner also failed:", fallbackError);
+              const errorMessage = error instanceof Error ? error.message : String(error);
+              setCameraError(`Failed to initialize camera scanner: ${errorMessage}`);
+              setIsScanning(false);
+            }
+          }
+        } else {
+          // Retry after a short delay
+          setTimeout(initScanner, 100);
+        }
+      };
+
+      initScanner();
+    }
+  }, [isScanning, scanner]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -166,6 +321,32 @@ const QRScanner: React.FC = () => {
               Scan Attendee QR Code
             </h2>
 
+            {/* Camera Error Display */}
+            {cameraError && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg"
+              >
+                <div className="flex items-center space-x-2">
+                  <svg
+                    className="w-5 h-5 text-red-500"
+                    fill="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+                  </svg>
+                  <p className="text-red-700 text-sm">{cameraError}</p>
+                </div>
+                <button
+                  onClick={() => setCameraError(null)}
+                  className="mt-2 text-sm text-red-600 hover:text-red-800 underline"
+                >
+                  Try Again
+                </button>
+              </motion.div>
+            )}
+
             {!isScanning ? (
               <motion.div
                 initial={{ opacity: 0 }}
@@ -184,11 +365,14 @@ const QRScanner: React.FC = () => {
 
                 <p className="text-gray-600">
                   Click the button below to start scanning QR codes for event
-                  check-in
+                  check-in. Make sure to allow camera access when prompted.
                 </p>
 
                 <button
-                  onClick={startScanning}
+                  onClick={async () => {
+                    console.log("Button clicked!"); // Debug log
+                    await startScanning();
+                  }}
                   className="btn-primary px-8 py-3 text-lg"
                 >
                   Start Scanning
@@ -200,36 +384,8 @@ const QRScanner: React.FC = () => {
                 animate={{ opacity: 1 }}
                 className="space-y-4"
               >
-                <div className="relative bg-black rounded-lg overflow-hidden">
-                  <video
-                    ref={videoRef}
-                    autoPlay
-                    playsInline
-                    className="w-full h-64 object-cover"
-                  />
-                  <canvas ref={canvasRef} className="hidden" />
-
-                  {/* Scanning overlay */}
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-48 h-48 border-4 border-primary-500 rounded-lg relative">
-                      <div className="absolute top-0 left-0 w-6 h-6 border-t-4 border-l-4 border-white"></div>
-                      <div className="absolute top-0 right-0 w-6 h-6 border-t-4 border-r-4 border-white"></div>
-                      <div className="absolute bottom-0 left-0 w-6 h-6 border-b-4 border-l-4 border-white"></div>
-                      <div className="absolute bottom-0 right-0 w-6 h-6 border-b-4 border-r-4 border-white"></div>
-
-                      {/* Scanning line animation */}
-                      <motion.div
-                        className="absolute left-0 right-0 h-1 bg-primary-500"
-                        animate={{ y: [0, 184, 0] }}
-                        transition={{
-                          duration: 2,
-                          repeat: Infinity,
-                          ease: "linear",
-                        }}
-                      />
-                    </div>
-                  </div>
-                </div>
+                {/* QR Scanner Container */}
+                <div id="qr-reader" ref={scannerRef} className="w-full"></div>
 
                 <p className="text-gray-600">
                   Position the QR code within the scanning area
