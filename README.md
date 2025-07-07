@@ -1,70 +1,236 @@
-# Getting Started with Create React App
+# MapEase Client
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+A complete frontend solution for event navigation and management using React.js, TypeScript, and Tailwind CSS. MapEase provides interactive maps, QR-based check-ins, and real-time navigation for event attendees.
 
-## Available Scripts
+## 🌟 Features
 
-In the project directory, you can run:
+### Landing Page
 
-### `npm start`
+- Clean, animated landing interface with MapEase branding
+- Google Authentication integration for college/workplace email domains
+- Role-based redirect system (Super Admin vs Tenant User)
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+### Super Admin Dashboard
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+- Create new tenant organizations
+- Upload custom SVG maps for venues
+- Configure subdomains for multi-tenant support
+- Seamless redirect to tenant-specific environments
 
-### `npm test`
+### Tenant Dashboard
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+- Create and manage events
+- Configure event types (Open/Closed registration)
+- Generate shareable registration links
+- Quick access to approval panel and QR scanner
 
-### `npm run build`
+### Event Registration
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+- User-friendly registration forms
+- Support for both open and closed events
+- Responsive mobile-first design
+- Real-time form validation
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+### Approval Panel
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+- Review pending registrations
+- Approve/reject attendees with one click
+- Generate unique QR codes for approved users
+- Download QR codes for distribution
 
-### `npm run eject`
+### QR Scanner
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+- Real-time camera-based QR code scanning
+- Validate attendee entries
+- Prevent duplicate check-ins
+- Lock used QR codes automatically
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+### Interactive Map
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+- SVG-based venue navigation
+- Search and filter locations
+- Zoom and pan controls
+- Location details and directions
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+## 🛠 Tech Stack
 
-## Learn More
+- **Frontend Framework**: React 19.1.0 with TypeScript
+- **Styling**: Tailwind CSS with custom design system
+- **Routing**: React Router DOM with protected routes
+- **Animations**: Framer Motion for smooth transitions
+- **QR Codes**: QRCode generation and HTML5 QR scanning
+- **State Management**: React Context API
+- **Authentication**: Mock Google Auth (ready for real implementation)
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+## 📦 Installation
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+1. **Clone the repository**
 
-### Code Splitting
+   ```bash
+   git clone <repository-url>
+   cd mapease_event
+   ```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+2. **Install dependencies**
 
-### Analyzing the Bundle Size
+   ```bash
+   npm install
+   ```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+3. **Start the development server**
 
-### Making a Progressive Web App
+   ```bash
+   npm start
+   ```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+4. **Open your browser**
+   Navigate to `http://localhost:3000`
 
-### Advanced Configuration
+## 🏗 Project Structure
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+```
+src/
+├── components/           # React components
+│   ├── LandingPage.tsx
+│   ├── SuperAdminDashboard.tsx
+│   ├── TenantDashboard.tsx
+│   ├── EventRegistration.tsx
+│   ├── ApprovalPanel.tsx
+│   ├── QRScanner.tsx
+│   ├── InteractiveMap.tsx
+│   └── ProtectedRoute.tsx
+├── context/             # React context providers
+│   ├── AuthContext.tsx
+│   └── TenantContext.tsx
+├── types/               # TypeScript type definitions
+│   └── index.ts
+├── utils/               # Utility functions
+│   ├── auth.ts
+│   ├── qrcode.ts
+│   └── tenant.ts
+├── App.tsx              # Main app component with routing
+└── index.tsx            # App entry point
+```
 
-### Deployment
+## 🎨 Design System
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+### Colors
 
-### `npm run build` fails to minify
+- **Primary**: Blue shades (#3b82f6 family)
+- **Secondary**: Gray shades (#64748b family)
+- **Success**: Green (#10b981)
+- **Warning**: Yellow (#f59e0b)
+- **Error**: Red (#ef4444)
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+### Components
+
+- **Cards**: Rounded white containers with subtle shadows
+- **Buttons**: Primary (blue) and secondary (gray) variants
+- **Forms**: Consistent styling with focus states
+- **Animations**: Smooth transitions and micro-interactions
+
+## 🔐 Authentication Flow
+
+1. **Landing Page**: Users click "Continue with Google"
+2. **Role Detection**: System determines user role based on email domain
+3. **Redirect Logic**:
+   - Super Admin → `/admin-dashboard`
+   - Tenant Admin → `/dashboard` (subdomain-specific)
+   - Regular User → Registration pages
+
+## 🏢 Multi-Tenant Architecture
+
+- **Subdomain Routing**: `company-a.mapease.com`
+- **Tenant Context**: Provides tenant-specific data throughout the app
+- **Dynamic Configuration**: Each tenant has custom maps and settings
+
+## 📱 Responsive Design
+
+- **Mobile-First**: Optimized for mobile devices
+- **Breakpoints**: Tailwind CSS responsive utilities
+- **Touch-Friendly**: Large touch targets and gestures
+- **Progressive Enhancement**: Works across all device sizes
+
+## 🚀 Deployment
+
+### Build for Production
+
+```bash
+npm run build
+```
+
+### Environment Variables
+
+Create a `.env` file with:
+
+```
+REACT_APP_API_URL=your-api-url
+REACT_APP_GOOGLE_CLIENT_ID=your-google-client-id
+```
+
+### Hosting Recommendations
+
+- **Netlify**: Automatic deployments with subdomain support
+- **Vercel**: Edge functions for API integration
+- **AWS S3 + CloudFront**: Scalable static hosting
+
+## 🔧 Configuration
+
+### Tailwind CSS
+
+The project uses a custom Tailwind configuration with:
+
+- Extended color palette
+- Custom animations
+- Component utilities
+
+### TypeScript
+
+Strict TypeScript configuration ensures type safety across the application.
+
+## 🧪 Testing
+
+```bash
+# Run tests
+npm test
+
+# Run tests with coverage
+npm test -- --coverage
+```
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests if needed
+5. Submit a pull request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## 🐛 Known Issues
+
+- QR Scanner uses mock data (integrate with real QR scanning library)
+- Google Auth is mocked (implement real OAuth flow)
+- Maps use placeholder SVG (integrate with real venue maps)
+
+## 🚧 Future Enhancements
+
+- [ ] Real-time notifications
+- [ ] Analytics dashboard
+- [ ] Mobile app companion
+- [ ] Advanced map editing
+- [ ] Multi-language support
+- [ ] Integration with calendar systems
+- [ ] Automated email notifications
+- [ ] Advanced user roles and permissions
+
+## 📞 Support
+
+For support and questions, please contact the development team or create an issue in the repository.
+
+---
+
+Built with ❤️ by the MapEase team
