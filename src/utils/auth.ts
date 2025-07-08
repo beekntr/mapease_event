@@ -1,15 +1,19 @@
 import { User } from "../types";
 
 // Mock authentication functions - replace with real implementation
-export const authenticateWithGoogle = async (): Promise<User> => {
+export const authenticateWithGoogle = async (mockEmail?: string): Promise<User> => {
   // Simulate Google authentication
   return new Promise((resolve) => {
     setTimeout(() => {
+      // Use provided email or default to tenant admin
+      const email = mockEmail || "john.doe@company.com";
+      const role = getUserRole(email);
+      
       const mockUser: User = {
-        id: "user-123",
-        name: "John Doe",
-        email: "john.doe@company.com",
-        role: "tenant_admin", // or 'super_admin' based on email domain
+        id: `user-${Date.now()}`,
+        name: email.includes("admin") ? "Admin User" : "John Doe",
+        email: email,
+        role: role,
       };
       resolve(mockUser);
     }, 1000);

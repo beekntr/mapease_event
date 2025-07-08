@@ -8,10 +8,10 @@ const LandingPage: React.FC = () => {
   const { login } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleGoogleLogin = async () => {
+  const handleGoogleLogin = async (mockEmail?: string) => {
     setIsLoading(true);
     try {
-      const user = await authenticateWithGoogle();
+      const user = await authenticateWithGoogle(mockEmail);
       const userRole = getUserRole(user.email);
       const userWithRole = { ...user, role: userRole };
 
@@ -86,10 +86,11 @@ const LandingPage: React.FC = () => {
             Get Started
           </h2>
 
+          {/* Regular Google Login */}
           <button
-            onClick={handleGoogleLogin}
+            onClick={() => handleGoogleLogin()}
             disabled={isLoading}
-            className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 flex items-center justify-center space-x-3 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 flex items-center justify-center space-x-3 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed mb-4"
           >
             {isLoading ? (
               <div className="w-5 h-5 border-2 border-primary-600 border-t-transparent rounded-full animate-spin"></div>
@@ -114,11 +115,41 @@ const LandingPage: React.FC = () => {
                   />
                 </svg>
                 <span className="text-gray-700 font-medium">
-                  Continue with Google
+                  Continue with Google (Tenant Admin)
                 </span>
               </>
             )}
           </button>
+
+          {/* Test Login as Super Admin */}
+          <div className="border-t pt-4">
+            <p className="text-sm text-gray-500 text-center mb-3">Test Logins:</p>
+            <button
+              onClick={() => handleGoogleLogin("admin@mapease.com")}
+              disabled={isLoading}
+              className="w-full bg-red-50 border border-red-200 rounded-lg px-4 py-3 flex items-center justify-center space-x-3 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed mb-2"
+            >
+              <svg className="w-5 h-5 text-red-600" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2ZM21 9V7L15 1H5C3.89 1 3 1.89 3 3V21C3 22.1 3.89 23 5 23H19C20.1 23 21 22.1 21 21V9M12 13C13.1 13 14 13.9 14 15S13.1 17 12 17 10 16.1 10 15 10.9 13 12 13M12 7C14.76 7 17 9.24 17 12S14.76 17 12 17 7 14.76 7 12 9.24 7 12 7Z"/>
+              </svg>
+              <span className="text-red-700 font-medium">
+                Login as Super Admin
+              </span>
+            </button>
+
+            <button
+              onClick={() => handleGoogleLogin("user@company.com")}
+              disabled={isLoading}
+              className="w-full bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 flex items-center justify-center space-x-3 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <svg className="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 12C14.21 12 16 10.21 16 8S14.21 4 12 4 8 5.79 8 8 9.79 12 12 12M12 14C9.33 14 4 15.34 4 18V20H20V18C20 15.34 14.67 14 12 14Z"/>
+              </svg>
+              <span className="text-blue-700 font-medium">
+                Login as Tenant Admin
+              </span>
+            </button>
+          </div>
 
           <p className="text-sm text-gray-500 text-center mt-4">
             Use your organization email to access MapEase
